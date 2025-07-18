@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.env
+venv/
+.venv/  # Это важно для Poetry!
+pip-log.txt
+pip-delete-this-arg.txt
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Logs
+*.log
+*.log.*
+
+# Pytest
+.pytest_cache/
