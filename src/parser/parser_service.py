@@ -5,7 +5,7 @@ from typing import NamedTuple
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
-from parser.kwork_api_service import ApiResponse, Category
+from parser.kwork_api_service import ApiResponse, CategoryData
 
 
 class ParserError(Exception):
@@ -13,7 +13,7 @@ class ParserError(Exception):
 
 class ParsedJson(NamedTuple):
     data: list[dict]
-    category: Category
+    category: CategoryData
 
 class UserData(BaseModel):
     wants_hired_percent: int
@@ -40,7 +40,7 @@ class Project(BaseModel):
     kwork_count: int
     files: list[File] = []
     user: User
-    category: Category | None = None
+    category: CategoryData | None = None
 
 @dataclass
 class FileData:
@@ -66,7 +66,7 @@ class ProjectData:
     time_left: str
     kwork_count: int
     user: UserDataclass
-    category: Category | None
+    category: CategoryData | None
     files: list[FileData]
 
 
@@ -110,7 +110,7 @@ def _conver_to_dataclass(projects: list[Project]) -> list[ProjectData]:
         category=project.category
     ) for project in projects]
 
-def _add_category_to_projects(projects: list[ProjectData], category: Category) -> list[ProjectData]:
+def _add_category_to_projects(projects: list[ProjectData], category: CategoryData) -> list[ProjectData]:
     for project in projects:
         project.category = category
     return projects
