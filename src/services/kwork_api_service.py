@@ -14,7 +14,6 @@ class KworkApiError(Exception):
 class KworkApiBan(Exception):
     """Нет доступа к API Kwork"""
 
-
 async def _get_response(session: aiohttp.ClientSession, url: str) -> aiohttp.ClientResponse:
     async with session.post(url) as res:
         if res.status == 403:
