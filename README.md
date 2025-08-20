@@ -22,7 +22,6 @@ It helps freelancers stay up to date with new projects in selected categories an
 - 🤖 **Aiogram** — Telegram bot framework  
 - 🏗 **Pydantic** — data & config validation  
 - 📦 **Poetry** — dependency management  
-- 🧪 **Pytest** — testing  
 - 🧩 **Layered architecture** — modular, scalable, maintainable  
 
 ---
