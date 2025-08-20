@@ -42,7 +42,7 @@ poetry install
 ### 3. Configure environment
 ```bash
 BOT_CONFIG__TOKEN=your_telegram_bot_token
-... other params from .env.template
+# ...other params from .env.template
 ```
 
 ### 4. Run the bot
