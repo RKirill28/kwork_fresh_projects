@@ -11,7 +11,6 @@ from business.models.project import ProjectData
 from business.models.category import CategoryData
 
 
-categories_file = settings.file_config.user_cats_path
 storage_file = settings.file_config.user_data
 
 CATS_JSON_INPUT_TYPE = dict[int, list[CategoryData]]
