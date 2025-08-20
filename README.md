@@ -26,14 +26,6 @@ It helps freelancers stay up to date with new projects in selected categories an
 
 ---
 
-## 📸 Screenshots
- <img width="467" height="119" alt="image" src="https://github.com/user-attachments/assets/8a88072a-c96f-4a2a-b80b-b75deba6bb10" />
- <img width="374" height="147" alt="image" src="https://github.com/user-attachments/assets/6f93b9ed-381c-416e-b9ad-22f2fe1b65a1" />
- <img width="443" height="445" alt="image" src="https://github.com/user-attachments/assets/65b8ea88-b7af-452d-88b7-2641f007700e" />
-<img width="478" height="697" alt="image" src="https://github.com/user-attachments/assets/2a5fb4d4-7bbf-405a-92d0-cef585a41b26" />
-
----
-
 ## 🚀 Installation  
 
 ### 1. Clone the repository  
