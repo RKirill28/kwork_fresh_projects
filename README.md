@@ -1,63 +1,64 @@
-📦 Kwork Fresh Wants Bot
+# 📦 Kwork Fresh Wants Bot  
 
-A Telegram bot with a user-friendly interface for parsing the latest projects from the freelance marketplace Kwork
-.
-It helps freelancers stay up to date with new projects in selected categories and get instant notifications in Telegram.
+A Telegram bot with a user-friendly interface for parsing the latest projects from the freelance marketplace [Kwork](https://kwork.ru).  
+It helps freelancers stay up to date with new projects in selected categories and get instant notifications in Telegram.  
 
-✨ Features
+---
 
-🔎 Fetch the latest projects from Kwork
+## ✨ Features  
 
-🗂 Interactive category selection via Telegram inline menu
+- 🔎 Fetch **the latest projects** from Kwork  
+- 🗂 Interactive **category selection** via Telegram inline menu  
+- ⚙️ Manage parsing directly from the bot (**start/stop**)  
+- ⏱ Set custom **parsing frequency**  
+- 💬 Receive project notifications in real time  
+- 🧩 Clear **layered architecture** (Presentation, Business, Infrastructure, Domain)  
 
-⚙️ Manage parsing directly from the bot (start/stop)
+---
 
-⏱ Set custom parsing frequency
+## 🛠 Tech Stack  
 
-💬 Receive project notifications in real time
+- 🐍 **Python 3.13**  
+- 🤖 **Aiogram** — Telegram bot framework  
+- 🏗 **Pydantic** — data & config validation  
+- 📦 **Poetry** — dependency management  
+- 🧪 **Pytest** — testing  
+- 🧩 **Layered architecture** — modular, scalable, maintainable  
 
-🧩 Clear layered architecture (Presentation, Business, Infrastructure, Domain)
+---
 
-🛠 Tech Stack
+## 🚀 Installation  
 
-🐍 Python 3.13
-
-🤖 Aiogram — Telegram bot framework
-
-🏗 Pydantic — data & config validation
-
-📦 Poetry — dependency management
-
-🧪 Pytest — tests
-
-🧩 Layered architecture (modular design for scalability & maintainability)
-
-🚀 Installation
-1. Clone the repository
+### 1. Clone the repository  
+```bash
 git clone https://github.com/username/kwork-fresh-wants.git
-cd kwork-fresh-wants
+cd kwork-fresh-wants/src
+```
 
-2. Install dependencies with Poetry
+### 2. Install dependencies with Poetry 
+```bash
 poetry install
+```
 
-3. Configure environment
-
-Create a .env file:
-
+### 3. Configure environment
+```bash
 BOT_TOKEN=your_telegram_bot_token
+```
 
-4. Run the bot
-poetry run python src/main.py
+### 4. Run the bot
+```bash
+poetry run python main.py
+```
 
-📂 Project Structure
+## 📂 Project Structure
+```bash
 src/
 ├── bot/                  # Presentation layer (Telegram interface)
 │   ├── handlers.py       # Aiogram handlers
 │   ├── keyboards.py      # Inline/reply keyboards
-│   ├── middlewares.py    # Middlewares
 │   ├── states.py         # FSM states
 │   ├── texts.py          # Static bot texts
-│   └── services/         # Bot-level services (menus, state mgmt, parsing trigger)
+│   └── services/         # Bot-level services (menus, state managment, parsing trigger)
 │
 ├── business/             # Business logic layer
 │   ├── category_rules.py
@@ -76,14 +77,4 @@ src/
 ├── main.py               # Entry point
 ├── categories.json       # Kwork categories
 └── users.json            # User data
-
-🧪 Tests
-
-Run tests with:
-
-poetry run pytest
-
-📜 License
-
-This project is created for educational purposes.
-Feel free to use, modify, and improve 🚀
+```
