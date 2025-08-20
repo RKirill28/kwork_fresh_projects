@@ -1,7 +1,7 @@
 [project]
 name = "kwork-fresh-wants"
 version = "0.1.0"
-description = "Телеграм бот, парсит самые сежие проекты с биржи kwork"
+description = "Телеграм бот, парсит самые свежие проекты с биржи kwork"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
