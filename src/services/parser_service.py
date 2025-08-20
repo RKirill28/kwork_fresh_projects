@@ -1,73 +1,12 @@
-from datetime import datetime
+from pydantic import ValidationError
 
-from dataclasses import dataclass
-from typing import NamedTuple
+from business.models.category import ApiResponse, CategoryData
 
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
-
-from parser.kwork_api_service import ApiResponse, CategoryData
+from business.models.project import *
 
 
 class ParserError(Exception):
     """Ошибка парсинга"""
-
-class ParsedJson(NamedTuple):
-    data: list[dict]
-    category: CategoryData
-
-class UserData(BaseModel):
-    wants_hired_percent: int
-    wants_count: int
-
-class User(BaseModel):
-    username: str
-    data: UserData
-
-class File(BaseModel):
-    fname: str
-    size: int
-    url: str
-
-class Project(BaseModel):
-    id: int
-    name: str
-    description: str
-    price_limit: int = Field(alias='priceLimit')
-    possible_price: int = Field(alias='possiblePriceLimit')
-    date_create: datetime
-    date_expire: datetime
-    time_left: str = Field(alias='timeLeft')
-    kwork_count: int
-    files: list[File] = []
-    user: User
-    category: CategoryData | None = None
-
-@dataclass
-class FileData:
-    fname: str
-    size: int
-    url: str
-
-@dataclass
-class UserDataclass:
-    username: str
-    wants_hired_percent: int
-    wants_count: int
-
-@dataclass
-class ProjectData:
-    id: int
-    name: str
-    description: str
-    price_limit: int
-    possible_price: int
-    date_create: datetime
-    date_expire: datetime
-    time_left: str
-    kwork_count: int
-    user: UserDataclass
-    category: CategoryData | None
-    files: list[FileData]
 
 
 def _validate_and_parse(data: list[dict]) -> list[Project]:
@@ -97,6 +36,7 @@ def _conver_to_dataclass(projects: list[Project]) -> list[ProjectData]:
         description=project.description,
         price_limit=project.price_limit,
         possible_price=project.possible_price,
+        date_active=project.date_active,
         date_create=project.date_create,
         date_expire=project.date_expire,
         time_left=project.time_left,

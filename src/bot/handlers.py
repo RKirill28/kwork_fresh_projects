@@ -1,38 +1,39 @@
 import logging
 import asyncio
-from pathlib import Path
+from os import name
 
 from aiogram.types import ErrorEvent, Message, CallbackQuery
 from aiogram.filters import CommandStart, StateFilter
 from aiogram.filters.exception import ExceptionTypeFilter
-from aiogram import Bot, Router, F
+from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 
-from parser.categories_parser_service import parse, TelegramCategory, TelegramSubCategory, TelegramAttr
-from parser.kwork_api_service import CategoryData
-from parser import parse_kwork
+from services.categories_parser_service import parse
+from services.kwork_api_service import KworkApiBan, KworkApiError
+from services.main import parse_kwork
+from services.storage_service import StorageServiceException, get_categories, get_parser_delay, save_categories, save_parser_delay
 
-from bot.messages import WELCOME_MESS
+from business.models.category import TelegramCategory, TelegramSubCategory, TelegramAttr, CategoryData
+
+from bot.texts import SETTINGS_MENU, WELCOME_MESS, MAIN_MENU, CHOICE_CATS_MENU
 from bot.exception import TelegramBotException 
-from bot.services.state_service import get_parser_state, init_menu_state 
 from bot.states import Menu
-from bot.middlewares import InitialMiddleware
 from bot.keyboards import *
-from bot.services.db_service import JsonDBServiceException, get_categories, get_category_ids, save_categories
-from bot.services.category_service import build_category_data, set_selected_cats
-from bot.services.parser_service import toggle_parser
+
+from bot.services.category_service import build_category_data, set_selected_cats, change_selected, build_selected_cats_text
+from bot.services.parser_service import toggle_parser, run_parser
+from bot.services.state_service import get_parser_state, get_sub_cats, init_menu_state, get_key_by_state
+from bot.services.message_service import new_project_message
 
 from config import settings
 
 
 router = Router()
-router.callback_query.middleware(InitialMiddleware())
 
 logger = logging.getLogger(__name__)
 
 parsed_categories = parse(settings.file_config.cats_path)
-CATEGORY_FROM_STATE = list[TelegramCategory] | list[TelegramSubCategory] | list[TelegramAttr] | None 
-TELEGRAM_CATEGORIES_TYPE = list[TelegramCategory] | list[TelegramSubCategory] | list[TelegramAttr]
+CATEGORIES_STATE_TYPE = list[TelegramCategory] | list[TelegramSubCategory] | list[TelegramAttr] | None 
 
 
 @router.error(ExceptionTypeFilter(TelegramBotException))
@@ -47,54 +48,55 @@ async def error(event: ErrorEvent):
     if user_id is not None and event.bot is not None:
         await event.bot.send_message(
 	        chat_id=user_id,
-	        text=f'Извините, произошла ошибка: {event.exception}. Попробуйте еще раз.'
+	        text=f'Извини, произошла ошибка: {event.exception}. Попробуйте еще раз.'
         )
 
     logger.critical(event.exception)
 
 @router.callback_query(F.data == 'parser_toggle')
 async def parser_toggle(cb: CallbackQuery, state: FSMContext):
-    await cb.answer()
-    if not isinstance(cb.message, Message): raise TelegramBotException('Нету Message')
+    categories = get_categories(cb.from_user.id)
+    if not categories:
+        await cb.answer(
+            'Сначала выбери нужные категории для парсинга.'
+            'Перейди в Главное меню > Настройки парсера > Выбор категории.', 
+            show_alert=True
+        )
+        return
 
     await toggle_parser(state)
-
     parser_state = await get_parser_state(state)
 
     await cb.message.edit_reply_markup(
         reply_markup=show_parser_menu(parser_state)
     )
-    
-    categories = await state.get_value('res')
-    if categories is None:
-        await cb.answer('Ты не установил какие категории парсить. Сделай это в настройках!', show_alert=True)
-        return
 
     if parser_state is True: 
         await cb.answer('👏 Теперь ты будешь получать новые проекты в этот чат!')
 
-    while parser_state:
-        print('жду')
-        parser_state = await get_parser_state(state)
-        new_projects = await parse_kwork(Path('./projects.json'), categories)
-        for project in new_projects:
-            await cb.message.answer(
-                text='НОВЫЙ ПРОЕКТ!\n'
-                    f'<b>Название: <u>{project.name}</u></b>'
-            )
-        await asyncio.sleep(10)
+        async for new_projects in run_parser(categories, cb.from_user.id, state):
+            if new_projects is KworkApiBan:
+                await cb.message.answer("❌ API временно заблокирован...")
+                await show_menu(cb.message, state)
+                break
+
+            for project in new_projects:
+                await cb.message.answer(
+                    new_project_message(project)
+                )
+    else:
+        await cb.answer('Парсер остановлен!', show_alert=True)
 
 @router.callback_query(Menu.parsing)
 async def parsing_alert(cb: CallbackQuery):
     await cb.answer(
-        'Извините, но во время работы парсера нельзя нечего настраивать!'
-        'Чтобы изменить конфигурацию парсера, выключите его в главном меню.',
+        '🫷 Во время работы парсера нельзя ничего настраивать!'
+        ' Выключи парсер можно в главном меню.',
         show_alert=True
     )
 
 @router.message(CommandStart())
 async def start(mess: Message) -> None:
-    if not mess.from_user: raise TelegramBotException
     await mess.answer(
         WELCOME_MESS.format(name=mess.from_user.first_name),
         reply_markup=show_main_menu()
@@ -102,33 +104,37 @@ async def start(mess: Message) -> None:
 
 @router.message(F.text.contains('Главное меню'))
 async def show_menu(mess: Message, state: FSMContext) -> None:
-    if not mess.from_user: raise TelegramBotException
+    user_cats = get_categories(mess.from_user.id)
+    # category_ids = get_category_ids(mess.from_user.id)
+    cats = set_selected_cats(parsed_categories, user_cats)
+    
+    await state.update_data(main_cats=cats, res=set(user_cats))
 
     await init_menu_state(state)
     parser_state = await get_parser_state(state)
     if parser_state is None: raise TelegramBotException
 
     await mess.answer(
-        text='Ты в главной меню, выбери действие:',
+        text=MAIN_MENU,
         reply_markup=show_parser_menu(parser_state)
     )
 
 @router.callback_query(F.data == 'back_to_menu') 
 async def back_to_menu(cb: CallbackQuery, state: FSMContext): 
     await cb.answer() 
-    if not isinstance(cb.message, Message): raise TelegramBotException('Нету Message') 
 
     parser_state = await get_parser_state(state) 
-    await cb.message.edit_reply_markup(
+    await cb.message.edit_text(
+        MAIN_MENU,
         reply_markup=show_parser_menu(parser_state)
     ) 
 
 @router.callback_query(F.data == 'back_to_settings') 
 async def back_to_settings(cb: CallbackQuery, state: FSMContext): 
     await cb.answer() 
-    if not isinstance(cb.message, Message): raise TelegramBotException 
 
-    await cb.message.edit_reply_markup(
+    await cb.message.edit_text(
+        SETTINGS_MENU,
         reply_markup=show_settings_parser_menu()
     )
     await state.set_state(Menu.settings)
@@ -136,9 +142,34 @@ async def back_to_settings(cb: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == 'settings')
 async def show_settings_menu(cb: CallbackQuery, state: FSMContext):
     await cb.answer()
-    if not isinstance(cb.message, Message): raise TelegramBotException 
 
-    await cb.message.edit_reply_markup(
+    await cb.message.edit_text(
+        SETTINGS_MENU,
+        reply_markup=show_settings_parser_menu()
+    )
+    await state.set_state(Menu.settings)
+
+@router.callback_query(F.data == 'set_time_parse')
+async def set_parsing_delay(cb: CallbackQuery, state: FSMContext):
+    delay = get_parser_delay(cb.from_user.id)
+    await cb.message.answer(
+        f'Сейчас установлено: {delay} секунд.\n'
+        'Введи как часто нужно првоерять биржу, в секундах, просто число:'
+    )
+    await cb.answer()
+    await state.set_state(Menu.set_delay)
+
+@router.message(Menu.set_delay)
+async def input_parsing_delay(mess: Message, state: FSMContext):
+    if not mess.text.isdigit() or mess.text is None:
+        await mess.answer('Это не число! Попробуй еще раз.')
+        return
+    number = int(mess.text)
+    save_parser_delay(number, mess.from_user.id)
+
+    await mess.answer('✅ Успешно сохранил!')
+    await mess.answer(
+        SETTINGS_MENU,
         reply_markup=show_settings_parser_menu()
     )
     await state.set_state(Menu.settings)
@@ -146,36 +177,21 @@ async def show_settings_menu(cb: CallbackQuery, state: FSMContext):
 @router.callback_query(Menu.settings, F.data == 'choice_category')
 async def choose_cat_menu(cb: CallbackQuery, state: FSMContext):
     await cb.answer()
-    if not isinstance(cb.message, Message): raise TelegramBotException('Нету Message')
 
     user_cats = get_categories(cb.from_user.id)
-    category_ids = get_category_ids(cb.from_user.id)
-    cats = set_selected_cats(parsed_categories, category_ids)
+    # category_ids = get_category_ids(cb.from_user.id)
+    cats = set_selected_cats(parsed_categories, user_cats)
     
-    await state.update_data(main_cats=cats, cats_set=cats, res=set(user_cats))
-
-    await cb.message.answer(
-        text='categories',
+    await state.update_data(main_cats=cats, res=set(user_cats))
+     
+    await cb.message.edit_text(
+        text=CHOICE_CATS_MENU.format(
+            selected_cats_text=build_selected_cats_text(parsed_categories)
+        ),
         reply_markup=get_category_menu(parsed_categories)
     )
     await state.set_state(Menu.choose_main_cat)
 
-async def get_cats_key(state: FSMContext):
-    """Получаю ключ в зависимости от состояния"""
-    curr_state = await state.get_state()
-    if curr_state == Menu.choose_main_cat.state:
-        return 'main_cats'
-    elif curr_state == Menu.choose_sub_cat.state:
-        return 'sub_cats'
-    elif curr_state == Menu.choose_attr.state:
-        return 'attrs'
-    else: raise TelegramBotException('Не удалось получить ключ категорий') 
-
-def change_main_cat_selected(cats: TELEGRAM_CATEGORIES_TYPE, id: int):
-    for cat in cats:
-        if cat.id == id:
-            cat.selected = not cat.selected
-    return cats
 
 @router.callback_query(
     StateFilter(Menu.choose_main_cat, Menu.choose_sub_cat, Menu.choose_attr),
@@ -183,15 +199,14 @@ def change_main_cat_selected(cats: TELEGRAM_CATEGORIES_TYPE, id: int):
 )
 async def select_cat(cb: CallbackQuery, state: FSMContext):
     await cb.answer()
-    if not isinstance(cb.message, Message): raise TelegramBotException
         
     id = int(cb.data.split(':')[-1])
 
-    cats_key = await get_cats_key(state)
-    cats: CATEGORY_FROM_STATE = await state.get_value(cats_key)
+    cats_key = await get_key_by_state(state)
+    cats: CATEGORIES_STATE_TYPE = await state.get_value(cats_key)
     if cats is None: raise TelegramBotException(f'Нету {cats_key}')
 
-    cats = change_main_cat_selected(cats, id)
+    cats = change_selected(cats, id)
     await state.update_data({cats_key: cats})
 
     res: set[CategoryData] | None = await state.get_value('res')
@@ -211,26 +226,32 @@ async def select_cat(cb: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == 'back_cat')
 async def back_cat(cb: CallbackQuery, state: FSMContext):
     await cb.answer()
-    if not isinstance(cb.message, Message): raise TelegramBotException
 
     curr_state = await state.get_state()
     reply_markup = None
+    text = None
     if curr_state == Menu.choose_main_cat:
-        reply_markup = show_parser_menu(False)
-        await state.set_state(Menu.menu)
+        text=SETTINGS_MENU
+        reply_markup = show_settings_parser_menu()
+        await state.set_state(Menu.settings)
     elif curr_state == Menu.choose_sub_cat:
+        text=CHOICE_CATS_MENU.format(
+            selected_cats_text=build_selected_cats_text(parsed_categories)
+        )
         reply_markup = get_category_menu(parsed_categories)
         await state.set_state(Menu.choose_main_cat)
     elif curr_state == Menu.choose_attr:
-        cats: list[TelegramSubCategory] | None = await state.get_value('sub_cats')
-        if cats is None: raise TelegramBotException
+        sub_cats = await get_sub_cats(state)
 
-        reply_markup = get_category_menu(cats)
-
+        text=CHOICE_CATS_MENU.format(
+            selected_cats_text=build_selected_cats_text(parsed_categories)
+        )
+        reply_markup = get_category_menu(sub_cats)
         await state.set_state(Menu.choose_sub_cat)
     else:
         raise TelegramBotException('Не перешел назад, не знаю состояния!')
-    await cb.message.edit_reply_markup(
+    await cb.message.edit_text(
+        text,
         reply_markup=reply_markup
     )
 
@@ -239,34 +260,28 @@ async def back_cat(cb: CallbackQuery, state: FSMContext):
     StateFilter(Menu.choose_main_cat, Menu.choose_sub_cat, Menu.choose_attr)
 )
 async def save(cb: CallbackQuery, state: FSMContext):
-    if not isinstance(cb.message, Message): raise TelegramBotException('Нету Message')
-
     res: set[CategoryData] | None = await state.get_value('res')
     if res is None:
-        await cb.answer('❌ Нечего сохранять!')
+        await cb.answer('❌ Нечего сохранять!', show_alert=True)
         return
 
-    print('Для сохранения вот такой вот сет: ', res)
     try:
-        save_categories(list(res), cb.from_user.id)
-    except JsonDBServiceException as e:
-        await cb.answer('Произошла ошибка!')
+        save_categories(cb.from_user.id, res)
+    except StorageServiceException as e:
+        await cb.answer('Произошла ошибка!', show_alert=True)
         return
 
-    await cb.message.edit_reply_markup(
+    await cb.message.edit_text(
+        MAIN_MENU,
         reply_markup=show_parser_menu(False)
     )
     await state.set_state(Menu.menu)
-
     await cb.answer('✅ Успешно сохранил!')
 
-    
 @router.callback_query(Menu.choose_main_cat, F.data.as_('id'))
 async def choose_sub_cat(cb: CallbackQuery, state: FSMContext, id: str):
     await cb.answer()
-    if not isinstance(cb.message, Message): raise TelegramBotException
-
-    id = int(id)
+    id = int(id) # pyright: ignore
 
     cats = None
     for cat in parsed_categories:
@@ -275,7 +290,6 @@ async def choose_sub_cat(cb: CallbackQuery, state: FSMContext, id: str):
             break
     if cats is None: raise TelegramBotException
     
-    # await add_data_to_state(state, 'sub_cats', cats)
     await state.update_data(sub_cats=cats)
 
     await cb.message.edit_reply_markup(
@@ -285,39 +299,31 @@ async def choose_sub_cat(cb: CallbackQuery, state: FSMContext, id: str):
 
 @router.callback_query(Menu.choose_sub_cat, F.data.as_('id'))
 async def choose_attr(cb: CallbackQuery, state: FSMContext, id: str):
-    await cb.answer()
-    if not isinstance(cb.message, Message): raise TelegramBotException
-
-    id = int(id) # жто sub_cat_id
+    id = int(id) # pyright: ignore 
     
-    # await add_data_to_state(state, 'sub_cat_id', id)
     await state.update_data(sub_cat_id=id)
 
-    cats_key = await get_cats_key(state)
-    if cats_key != 'sub_cats': raise TelegramBotException
+    sub_cats_from_state: list[TelegramSubCategory] | None = await state.get_value('sub_cats')
+    if sub_cats_from_state is None: raise TelegramBotException
 
-    sub_cats: CATEGORY_FROM_STATE = await state.get_value(cats_key)
-    if sub_cats is None: raise TelegramBotException
-    if not isinstance(sub_cats[0], TelegramSubCategory): raise TelegramBotException
-    sub_cats: list[TelegramSubCategory]
-
-    cats = None
-    for sub_cat in sub_cats:
+    attrs = None
+    for sub_cat in sub_cats_from_state:
         if sub_cat.id == id:
-            cats = sub_cat.attrs
+            attrs = sub_cat.attrs # может быть пустым списком
             break
-    if cats is None: raise TelegramBotException(f'Не удалось найти аттрибуты для подкатегории {id}')
 
-    # await add_data_to_state(state, 'attrs', cats)
-    await state.update_data(attrs=cats)
+    if not attrs: 
+        await cb.answer('Нету атрибутов :(')
+        return
+
+    await state.update_data(attrs=attrs)
 
     await cb.message.edit_reply_markup(
-        reply_markup=get_category_menu(cats)
+        reply_markup=get_category_menu(attrs)
     )
     await state.set_state(Menu.choose_attr)
 
 @router.message(F.text.contains('Об авторе бота'))
 async def about_author(mess: Message) -> None:
-    if not mess.from_user: raise TelegramBotException
     await mess.answer('dfsd')
 

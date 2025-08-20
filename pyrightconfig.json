@@ -1,0 +1,9 @@
+{
+  "typeCheckingMode": "basic", 
+  "reportOptionalMemberAccess": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportOptionalOperand": "none",
+  "reportOptionalSubscript": "none",
+  "reportOptionalCall": "none"
+}
+

@@ -1,38 +1,13 @@
-from dataclasses import dataclass
 import json
 
 from pathlib import Path
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import ValidationError
+
+from business.models.category import TelegramAttr, TelegramCategory, TelegramSubCategory
 
 
 class CategoryParserException(Exception):
     """Ошибка в работе парсера категорий"""
-
-class Attr(BaseModel):
-    id: int
-    name: str = Field(alias='title')
-
-class SubCategory(BaseModel):
-    id: int 
-    name: str
-    attrs: list['TelegramAttr'] = []
-
-class Category(BaseModel):
-    id: int 
-    name: str
-    sub_categories: list['TelegramSubCategory'] 
-
-class Categories(BaseModel):
-    categories: list[Category]
-
-class TelegramAttr(Attr):
-    selected: bool = False
-
-class TelegramSubCategory(SubCategory):
-    selected: bool = False
-
-class TelegramCategory(Category):
-    selected: bool = False
 
 
 def parse(path: Path) -> list[TelegramCategory]:
@@ -51,7 +26,7 @@ def parse(path: Path) -> list[TelegramCategory]:
 #         for cat in cats
 #     ]
 
-def get_sub_cats(categories: list[Category], cat_id: int) -> list[SubCategory] | list[Attr]:
+def get_sub_cats(categories: list[TelegramCategory], cat_id: int) -> list[TelegramSubCategory] | list[TelegramAttr]:
     """Получает только список подкатегорий для main_cat или sub_cat"""
     for cat in categories:
         if cat.id == cat_id:

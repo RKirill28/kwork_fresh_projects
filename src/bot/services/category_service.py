@@ -1,12 +1,11 @@
-# Сохрраняем категори
 from aiogram.fsm.context import FSMContext
-
-from parser.kwork_api_service import CategoryData
 
 from bot.states import Menu
 
-from parser.categories_parser_service import TelegramCategory
+from business.models.category import TelegramCategory, TelegramSubCategory, TelegramAttr, CategoryData
 
+
+TELEGRAM_CATEGORIES_TYPE = list[TelegramCategory] | list[TelegramSubCategory] | list[TelegramAttr]
 
 class CategoryServiceException(Exception):
     """Ошибка в работе сервиса категорий"""
@@ -29,15 +28,42 @@ async def build_category_data(state: FSMContext, id: int) -> CategoryData:
     else:
         raise CategoryServiceException('Не удалось собрать CategoryData из полученного id!')
 
-def set_selected_cats(categories: list[TelegramCategory], category_ids: set[int]) -> list[TelegramCategory]:
-    for cat in categories:
-        if cat.id in category_ids:
-            cat.selected = True
-        for sub_cat in cat.sub_categories:
-            if sub_cat.id in category_ids:
-                sub_cat.selected = True
-            for attr in sub_cat.attrs:
-                if attr.id in category_ids:
+def set_selected_cats(categories: list[TelegramCategory], user_cats: set[CategoryData]) -> list[TelegramCategory]:
+    # просто поделил id на партии и потом проверял по ним
+    main_ids = {cat.main_id for cat in user_cats if cat.main_id is not None}
+    sub_ids = {cat.sub_id for cat in user_cats if cat.sub_id is not None and cat.attr_id is None}
+    attr_pairs = {(cat.sub_id, cat.attr_id) for cat in user_cats if cat.sub_id is not None and cat.attr_id is not None}
+
+    for category in categories:
+        if category.id in main_ids:
+            category.selected = True
+
+        for sub in category.sub_categories:
+            if sub.id in sub_ids:
+                sub.selected = True
+
+            for attr in sub.attrs:
+                if (sub.id, attr.id) in attr_pairs:
                     attr.selected = True
     return categories
 
+def change_selected(cats: TELEGRAM_CATEGORIES_TYPE, id: int) -> TELEGRAM_CATEGORIES_TYPE:
+    for cat in cats:
+        if cat.id == id:
+            cat.selected = not cat.selected
+    return cats
+
+def build_selected_cats_text(categories: list[TelegramCategory]) -> str:
+    selected_cats_text = ''
+    for cat in categories:
+        if cat.selected:
+            selected_cats_text += f'· <u>{cat.name}</u>\n' 
+        for sub_cat in cat.sub_categories:
+            if sub_cat.selected:
+                selected_cats_text += '· ' + cat.name + ' > ' + f'<u>{sub_cat.name}</u>\n' 
+            for attr in sub_cat.attrs:
+                if attr.selected:
+                    selected_cats_text += '· ' + cat.name + ' > ' + sub_cat.name + ' > ' + f'<u>{attr.name}</u>\n'
+    return selected_cats_text
+
+# def category_data_to_text(category_data: CategoryData: list[TelegramCategory])

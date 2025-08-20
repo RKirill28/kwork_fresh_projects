@@ -9,8 +9,9 @@ class ApiConfig(BaseSettings):
     url: str
 
 class FileConfig(BaseSettings):
-    projects_path: Path
+    user_data: Path
     cats_path: Path
+    user_cats_path: Path
 
 class Settings(BaseSettings):
     bot_config: BotConfig

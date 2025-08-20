@@ -58,6 +58,7 @@
 import asyncio
 import datetime
 import logging
+from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import CallbackQuery, Message, Update, TelegramObject
@@ -70,17 +71,20 @@ from config import settings
 
 from bot.handlers import router
 
+from services.storage_service import init_json_file
+
 
 async def main():
-    dp = Dispatcher(storage=MemoryStorage())
-    bot = Bot(
-	    token=settings.bot_config.token,
-	    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-    )
-    await bot.delete_webhook(drop_pending_updates=True)
+	dp = Dispatcher(storage=MemoryStorage())
+	bot = Bot(
+	 token=settings.bot_config.token,
+	 default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+	)
+	await bot.delete_webhook(drop_pending_updates=True)
 
-    dp.include_router(router)
-    await dp.start_polling(bot)
+	dp.include_router(router)
+
+	await dp.start_polling(bot)
 
 
 if __name__ == '__main__':
@@ -97,6 +101,9 @@ if __name__ == '__main__':
 	)
 	file_handler.setFormatter(foramtter)
 	file_handler.setLevel(logging.DEBUG)
+
+	init_json_file(settings.file_config.user_cats_path)
+	init_json_file(settings.file_config.user_data)
 
 	# logger.addHandler(file_handler) - # WARN add after deploy
 

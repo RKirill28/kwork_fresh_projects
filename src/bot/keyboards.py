@@ -1,10 +1,8 @@
-from aiogram.filters import callback_data
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 
-from parser.categories_parser_service import Attr, Category, SubCategory, TelegramCategory, TelegramSubCategory, TelegramAttr
-from parser.kwork_api_service import CategoryData
+from business.models.category import TelegramCategory, TelegramSubCategory, TelegramAttr, CategoryData
 
 
 class ToCatData(CallbackData, prefix='to_cat'):

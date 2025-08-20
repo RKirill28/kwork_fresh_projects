@@ -2,27 +2,24 @@ import aiohttp
 import asyncio
 import json
 
-from typing import NamedTuple
-from dataclasses import dataclass
-
 from config import settings
+
+from business.models.category import ApiResponse, CategoryData
+from business.category_rules import _get_query_string_by_category
 
 
 class KworkApiError(Exception):
     """Ошибка при работе с API Kwork"""
 
-@dataclass(frozen=True)
-class CategoryData:
-    main_id: int | None
-    sub_id: int | None 
-    attr_id: int | None
+class KworkApiBan(Exception):
+    """Нет доступа к API Kwork"""
 
-class ApiResponse(NamedTuple):
-    json: dict
-    category: CategoryData
 
 async def _get_response(session: aiohttp.ClientSession, url: str) -> aiohttp.ClientResponse:
     async with session.post(url) as res:
+        if res.status == 403:
+            raise KworkApiBan
+
         if res.status != 200: 
             raise KworkApiError(f'Код ответа: {res.status}')
 
@@ -38,12 +35,6 @@ async def _get_json(response: aiohttp.ClientResponse) -> dict:
     except json.JSONDecodeError:
         raise KworkApiError
 
-def _get_query_string_by_category(category: CategoryData) -> str:
-    if category.main_id is not None:
-        return f'&c={category.main_id}'
-    if category.attr_id is not None:
-        return f'&c={category.sub_id}&attr={category.attr_id}'
-    return f'&c={category.sub_id}'
 
 async def get_project_by_page(category: CategoryData, page: int = 1) -> ApiResponse:
     """Получает json c проектами на бирже указанной категории и страницы"""
