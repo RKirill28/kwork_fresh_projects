@@ -11,22 +11,31 @@ from business.category_rules import _get_query_string_by_category
 class KworkApiError(Exception):
     """Ошибка при работе с API Kwork"""
 
+
 class KworkApiBan(Exception):
     """Нет доступа к API Kwork"""
 
+<<<<<<< Updated upstream
 async def _get_response(session: aiohttp.ClientSession, url: str) -> aiohttp.ClientResponse:
+=======
+
+async def _get_response(
+    session: aiohttp.ClientSession, url: str
+) -> aiohttp.ClientResponse:
+>>>>>>> Stashed changes
     async with session.post(url) as res:
         if res.status == 403:
             raise KworkApiBan
 
-        if res.status != 200: 
-            raise KworkApiError(f'Код ответа: {res.status}')
+        if res.status != 200:
+            raise KworkApiError(f"Код ответа: {res.status}")
 
         try:
             await res.read()
-        except aiohttp.ClientResponseError: 
+        except aiohttp.ClientResponseError:
             raise KworkApiError
     return res
+
 
 async def _get_json(response: aiohttp.ClientResponse) -> dict:
     try:
@@ -39,9 +48,10 @@ async def get_project_by_page(category: CategoryData, page: int = 1) -> ApiRespo
     """Получает json c проектами на бирже указанной категории и страницы"""
     async with aiohttp.ClientSession() as session:
         response = await _get_response(
-            session=session, 
-            url=settings.api_config.url+f'?page={page}'+_get_query_string_by_category(category=category)
+            session=session,
+            url=settings.api_config.url
+            + f"?page={page}"
+            + _get_query_string_by_category(category=category),
         )
         json_res = await _get_json(response)
     return ApiResponse(json_res, category)
-

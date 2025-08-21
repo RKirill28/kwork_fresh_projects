@@ -6,6 +6,7 @@ class ChooseCat(StatesGroup):
     sub_cats: State = State()
     attrs: State = State()
 
+
 class Menu(StatesGroup):
     menu: State = State()
     parsing: State = State()

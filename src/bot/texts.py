@@ -1,6 +1,3 @@
-
-
-
 WELCOME_MESS = """
 Здравствуйте, {name}!
 """
@@ -18,6 +15,3 @@ CHOICE_CATS_MENU = """
 Сейчас выделены следующие категории:
 <i>{selected_cats_text}</i>
 """
-
-
-
