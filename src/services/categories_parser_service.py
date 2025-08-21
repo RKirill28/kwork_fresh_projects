@@ -19,9 +19,7 @@ def parse(path: Path) -> list[TelegramCategory]:
         raise CategoryParserException(f"Ошибка валидации: {e.json()}")
 
 
-<<<<<<< Updated upstream
-def get_sub_cats(categories: list[TelegramCategory], cat_id: int) -> list[TelegramSubCategory] | list[TelegramAttr]:
-=======
+# def get_sub_cats(categories: list[TelegramCategory], cat_id: int) -> list[TelegramSubCategory] | list[TelegramAttr]:
 # def get_categories(cats: list[Category] | list[SubCategory] | list[Attr]) -> list[TelegramCategory]:
 #     return [
 #         TelegramCategory(
@@ -34,7 +32,6 @@ def get_sub_cats(categories: list[TelegramCategory], cat_id: int) -> list[Telegr
 def get_sub_cats(
     categories: list[TelegramCategory], cat_id: int
 ) -> list[TelegramSubCategory] | list[TelegramAttr]:
->>>>>>> Stashed changes
     """Получает только список подкатегорий для main_cat или sub_cat"""
     for cat in categories:
         if cat.id == cat_id:

@@ -15,14 +15,10 @@ class KworkApiError(Exception):
 class KworkApiBan(Exception):
     """Нет доступа к API Kwork"""
 
-<<<<<<< Updated upstream
-async def _get_response(session: aiohttp.ClientSession, url: str) -> aiohttp.ClientResponse:
-=======
 
 async def _get_response(
     session: aiohttp.ClientSession, url: str
 ) -> aiohttp.ClientResponse:
->>>>>>> Stashed changes
     async with session.post(url) as res:
         if res.status == 403:
             raise KworkApiBan

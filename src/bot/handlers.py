@@ -1,6 +1,4 @@
 import logging
-import asyncio
-from os import name
 
 from aiogram.types import ErrorEvent, Message, CallbackQuery
 from aiogram.filters import CommandStart, StateFilter
@@ -9,8 +7,7 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 
 from services.categories_parser_service import parse
-from services.kwork_api_service import KworkApiBan, KworkApiError
-from services.main import parse_kwork
+from services.kwork_api_service import KworkApiBan
 from services.storage_service import (
     StorageServiceException,
     get_categories,
