@@ -5,6 +5,12 @@ It helps freelancers stay up to date with new projects in selected categories an
 
 ---
 
+## 📷 Video
+
+https://github.com/user-attachments/assets/bcad3e1c-423b-487b-98c0-aaeadc252047
+
+---
+
 ## ✨ Features  
 
 - 🔎 Fetch **the latest projects** from Kwork  
