@@ -41,7 +41,7 @@ from bot.services.state_service import (
     init_menu_state,
     get_key_by_state,
 )
-from bot.services.message_service import new_project_message
+from bot.services.message_service import build_project_message
 
 from config import settings
 
@@ -102,7 +102,10 @@ async def parser_toggle(cb: CallbackQuery, state: FSMContext):
                 break
 
             for project in new_projects:
-                await cb.message.answer(new_project_message(project))
+                url = f"https://kwork.ru/projects/{project.id}/view"
+                await cb.message.answer(
+                    build_project_message(project), reply_markup=project_link(url)
+                )
     else:
         await cb.answer("Парсер остановлен!", show_alert=True)
 

@@ -33,6 +33,12 @@ class ChooseCategoryData(CallbackData, prefix="choose_category"):
     attr_id: int | None
 
 
+def project_link(url: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="🌎 Перейти к проекту", url=url)]]
+    )
+
+
 def show_main_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
