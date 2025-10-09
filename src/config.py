@@ -6,10 +6,6 @@ class BotConfig(BaseSettings):
     token: str
 
 
-class ApiConfig(BaseSettings):
-    url: str
-
-
 class FileConfig(BaseSettings):
     user_data: Path
     cats_path: Path
@@ -17,7 +13,6 @@ class FileConfig(BaseSettings):
 
 class Settings(BaseSettings):
     bot_config: BotConfig
-    api_config: ApiConfig
     file_config: FileConfig
 
     model_config = SettingsConfigDict(

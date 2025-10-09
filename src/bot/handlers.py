@@ -7,7 +7,7 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 
 from services.categories_parser_service import parse
-from services.kwork_api_service import KworkApiBan
+from services.kwork_api_service import KworkApiBan, KworkApiError
 from services.storage_service import (
     StorageServiceException,
     get_categories,
@@ -95,17 +95,21 @@ async def parser_toggle(cb: CallbackQuery, state: FSMContext):
     if parser_state is True:
         await cb.answer("👏 Теперь ты будешь получать новые проекты в этот чат!")
 
-        async for new_projects in run_parser(categories, cb.from_user.id, state):
-            if new_projects is KworkApiBan:
-                await cb.message.answer("❌ API временно заблокирован...")
-                await show_menu(cb.message, state)
-                break
+        try:
+            async for new_projects in run_parser(categories, cb.from_user.id, state):
+                if new_projects is KworkApiBan:
+                    await cb.message.answer("❌ API временно заблокирован...")
+                    await show_menu(cb.message, state)
+                    break
 
-            for project in new_projects:
-                url = f"https://kwork.ru/projects/{project.id}/view"
-                await cb.message.answer(
-                    build_project_message(project), reply_markup=project_link(url)
-                )
+                for project in new_projects:
+                    url = f"https://kwork.ru/projects/{project.id}/view"
+                    await cb.message.answer(
+                        build_project_message(project), reply_markup=project_link(url)
+                    )
+        except KworkApiError as e:
+            await cb.message.answer(f"Произошла ошибка:\n{e}")
+
     else:
         await cb.answer("Парсер остановлен!", show_alert=True)
 
@@ -113,8 +117,8 @@ async def parser_toggle(cb: CallbackQuery, state: FSMContext):
 @router.callback_query(Menu.parsing)
 async def parsing_alert(cb: CallbackQuery):
     await cb.answer(
-        "🫷 Во время работы парсера нельзя ничего настраивать!"
-        " Выключи парсер можно в главном меню.",
+        "🫷Во время работы парсера нельзя ничего настраивать!"
+        " Выключить парсер можно в главном меню.",
         show_alert=True,
     )
 

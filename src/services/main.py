@@ -9,6 +9,20 @@ from business.project_filter import get_new_projects
 import asyncio
 
 
+async def get_first_project(
+    categories: Iterable[CategoryData], user_id: int
+) -> ProjectData:
+    """Парсит первый проектс"""
+    tasks = []
+    for cateogry in categories:
+        tasks.append(get_project_by_page(category=cateogry))
+
+    projects_from_api: list[ApiResponse] = await asyncio.gather(*tasks)
+    parsed_projects: list[ProjectData] = parse(projects_from_api)
+    parsed_projects = sorted(parsed_projects, key=lambda obj: obj.date_active)
+    return parsed_projects[-1]
+
+
 async def parse_kwork(
     categories: Iterable[CategoryData], user_id: int
 ) -> list[ProjectData]:

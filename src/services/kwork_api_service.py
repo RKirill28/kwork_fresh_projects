@@ -2,8 +2,6 @@ import aiohttp
 import asyncio
 import json
 
-from config import settings
-
 from business.models.category import ApiResponse, CategoryData
 from business.category_rules import _get_query_string_by_category
 
@@ -45,8 +43,7 @@ async def get_project_by_page(category: CategoryData, page: int = 1) -> ApiRespo
     async with aiohttp.ClientSession() as session:
         response = await _get_response(
             session=session,
-            url=settings.api_config.url
-            + f"?page={page}"
+            url=f"https://kwork.ru/projects?page={page}"
             + _get_query_string_by_category(category=category),
         )
         json_res = await _get_json(response)

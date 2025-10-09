@@ -23,10 +23,6 @@ def _parse_data(data: dict) -> list[dict]:
         raise ParserError
 
 
-def run():
-    pass
-
-
 def _parse(data: dict) -> list[Project]:
     if not data.get("success"):
         raise ParserError

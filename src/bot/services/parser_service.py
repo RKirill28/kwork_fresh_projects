@@ -4,9 +4,9 @@ from aiogram.fsm.context import FSMContext
 from bot.services.state_service import get_parser_state
 from bot.states import Menu
 
-from services.main import parse_kwork
+from services.main import get_first_project, parse_kwork
 from services.kwork_api_service import KworkApiBan
-from services.storage_service import get_parser_delay
+from services.storage_service import get_parser_delay, save_last_project_by_user_id
 
 import asyncio
 
@@ -34,6 +34,10 @@ async def run_parser(
 ):
     parser_state = await get_parser_state(state)
     parsing_delay = get_parser_delay(user_id)
+
+    if parser_state:
+        first_project = await get_first_project(categories, user_id)
+        save_last_project_by_user_id(user_id, first_project)
 
     while parser_state:
         parser_state = await get_parser_state(state)
