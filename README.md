@@ -36,8 +36,8 @@ https://github.com/user-attachments/assets/bcad3e1c-423b-487b-98c0-aaeadc252047
 
 ### 1. Clone the repository  
 ```bash
-git clone https://github.com/username/kwork-fresh-wants.git
-cd kwork-fresh-wants/src
+git clone https://github.com/RKirill28/kwork_fresh_projects.git
+cd kwork_fresh_projects/src
 ```
 
 ### 2. Install dependencies with Poetry 
